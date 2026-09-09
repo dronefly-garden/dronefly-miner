@@ -36,6 +36,9 @@ dev = [
 max-line-length = 100
 extend-ignore = "E203"
 
+[tool.pytest.ini_options]
+addopts = "-p no:red-discordbot"
+
 [tool.uv]
 default-groups = "all"
 
