@@ -1,0 +1,51 @@
+[project]
+name = "dronefly-miner"
+version = "0.1.0"
+description = "Dronefly downloader and indexer"
+authors = [{ name = "Ben Armstrong", email = "synrg@debian.org" }]
+requires-python = ">=3.11,<3.13"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pyinaturalist>=0.8"
+]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+
+[tool.black]
+target-version = ['py311']
+
+[dependency-groups]
+dev = [
+    "black>=24.3.0,<25",
+    "pre-commit>=4.6.0",
+    "pytest>=7.2.1,<8",
+    "pytest-mock>=3.10.0,<4",
+    "pylint>=2.10.2,<3",
+    "pytest-asyncio>=0.20.3,<0.21",
+    "flake8-pyproject>=1.2.4,<2",
+]
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = "E203"
+
+[tool.uv]
+default-groups = "all"
+
+[tool.uv.build-backend]
+module-name = ["dronefly.miner"]
+module-root = ""
+
+[tool.uv.sources]
+dronefly-miner = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
