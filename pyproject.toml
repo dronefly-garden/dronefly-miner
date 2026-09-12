@@ -12,7 +12,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "numpy>=2.4.6",
+    "pandas>=3.0.5",
     "pyinaturalist-convert>=0.8.3",
+    "sqlalchemy>=2.0.52",
 ]
 
 [tool.bandit]
@@ -25,7 +28,7 @@ target-version = ['py311']
 dev = [
     "black>=24.3.0,<25",
     "pre-commit>=4.6.0",
-    "pytest>=7.2.1,<8",
+    "pytest>=8.0,<9.dev0",
     "pytest-mock>=3.10.0,<4",
     "pylint>=2.10.2,<3",
     "pytest-asyncio>=0.20.3,<0.21",
