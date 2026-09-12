@@ -12,7 +12,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "pyinaturalist>=0.8"
+    "pyinaturalist-convert>=0.8.3",
 ]
 
 [tool.bandit]

@@ -249,7 +249,7 @@ name = "dronefly-miner"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "pyinaturalist" },
+    { name = "pyinaturalist-convert" },
 ]
 
 [package.dev-dependencies]
@@ -264,7 +264,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyinaturalist", specifier = ">=0.8" }]
+requires-dist = [{ name = "pyinaturalist-convert", specifier = ">=0.8.3" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -309,6 +309,15 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/85/6a/cdee9ff7f2b7c6ddc219fd95b7c70c0a3d9f0367a506e9793eedfc72e337/flake8_pyproject-1.2.4-py3-none-any.whl", hash = "sha256:ea34c057f9a9329c76d98723bb2bb498cc6ba8ff9872c4d19932d48c91249a77", size = 5694, upload-time = "2025-11-28T21:40:01.309Z" },
+]
+
+[[package]]
+name = "flatten-dict"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/d0/34bf1bafa4d54e4ec20ca40856e991ffe7fdfd53831a2a36a7eb356508c8/flatten_dict-0.5.0.tar.gz", hash = "sha256:ca89664d0bc9552d525ee756726b5a755c17f65b5bf23d0a1f07841f181428b7", size = 9476, upload-time = "2026-04-28T14:23:44.979Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/9f/485516087cd8c44183aaf9ab850247a28e2e4a42a4d62eab77c21f673450/flatten_dict-0.5.0-py3-none-any.whl", hash = "sha256:c4bd2010052e4d33241433720d054322403fa7ad914fdc5cb1b31a713d4c561e", size = 9869, upload-time = "2026-04-28T14:23:45.695Z" },
 ]
 
 [[package]]
@@ -608,6 +617,21 @@ wheels = [
 ]
 
 [[package]]
+name = "pyinaturalist-convert"
+version = "0.8.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flatten-dict" },
+    { name = "pyinaturalist" },
+    { name = "requests-ratelimiter" },
+    { name = "tablib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/4e/6537cb5cdd845e75edad9d9140bfb0d44099418aa59dafc6aa768598cece/pyinaturalist_convert-0.8.3.tar.gz", hash = "sha256:e40dc22029306b6b92a34d03f76cc8ddcf00ae927479ab5a1816f4ff7f4021b0", size = 46744, upload-time = "2026-03-01T07:08:12.414Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/c0/8db6a2535f114bbbbe26a90e85d0ae7b1ebbfdc301cc3f862ed47c5dacd8/pyinaturalist_convert-0.8.3-py3-none-any.whl", hash = "sha256:53acda664495f893b544bbc0c142fcb3980b7924a6fac2a36cdd1e65db0093c4", size = 59217, upload-time = "2026-03-01T07:08:11.268Z" },
+]
+
+[[package]]
 name = "pylint"
 version = "2.17.7"
 source = { registry = "https://pypi.org/simple" }
@@ -811,6 +835,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "tablib"
+version = "3.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/b9/59d9c8b9c34642e7a718e8a1a7a91af3eb9b48f79bac794263702d41519c/tablib-3.10.0.tar.gz", hash = "sha256:781cfa9a42de8f33c52aff857fd0a04e483de4fd1c53eaaa9a6aeac62bad11de", size = 127128, upload-time = "2026-07-31T17:30:15.577Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/0f/3ae17545ff976687f679ed3a101df7017135ee04769e858a4ccea0cc3f3e/tablib-3.10.0-py3-none-any.whl", hash = "sha256:5721bf3a52d491f8f843628a3a3200db164f6ad9e92fb6eaa64dc3f945f30ad9", size = 50170, upload-time = "2026-07-31T17:30:04.925Z" },
 ]
 
 [[package]]
