@@ -1,4 +1,4 @@
-name: Dronefly-core
+name: Dronefly-miner
 
 on: 
   push:
