@@ -29,9 +29,7 @@ dev = [
     "black>=24.3.0,<25",
     "pre-commit>=4.6.0",
     "pytest>=8.0,<9.dev0",
-    "pytest-mock>=3.10.0,<4",
     "pylint>=2.10.2,<3",
-    "pytest-asyncio>=0.20.3,<0.21",
     "flake8-pyproject>=1.2.4,<2",
 ]
 
