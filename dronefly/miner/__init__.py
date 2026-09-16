@@ -1,14 +1,11 @@
 from platformdirs import user_data_dir
 import os
-import shutil
 
 from pyinaturalist import pprint
 from pyinaturalist_convert import enable_logging, get_db_taxa, load_dwca_tables, load_fts_taxa, aggregate_taxon_db, TaxonAutocompleter
 
 USER_DATA_PATH = os.path.join(user_data_dir(), "dronefly-miner")
 DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
-DWCA_DB_PATH = os.path.join(USER_DATA_PATH, 'observations.dwca.db')
-AGG_DB_PATH = os.path.join(USER_DATA_PATH, 'observations.agg.db')
 
 def load_fts_data():
     """Load all full text search data.
@@ -18,22 +15,9 @@ def load_fts_data():
     supplemented by common names for all languages.
     """
     enable_logging()
-    try:
-        load_dwca_tables(db_path=DB_PATH)
-    except Exception as err:
-        print(err)
-    shutil.copy(DB_PATH, DWCA_DB_PATH)
-
-    try:
-        aggregate_taxon_db(db_path=DB_PATH)
-    except Exception as err:
-        print(err)
-    shutil.copy(DB_PATH, AGG_DB_PATH)
-
-    try:
-        load_fts_taxa(db_path=DB_PATH, languages='all')
-    except Exception as err:
-        print(err)
+    load_dwca_tables(db_path=DB_PATH)
+    aggregate_taxon_db(db_path=DB_PATH)
+    load_fts_taxa(db_path=DB_PATH, languages='all')
 
 def taxon_autocomplete(text: str, language='en'):
     """Autocomplete taxa matching text.
