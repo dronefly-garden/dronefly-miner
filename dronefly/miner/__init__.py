@@ -18,9 +18,16 @@ def load_fts_data():
     supplemented by common names for all languages.
     """
     enable_logging()
-    load_dwca_tables(db_path=DB_PATH)
+    try:
+        load_dwca_tables(db_path=DB_PATH)
+    except Exception as err:
+        print(err)
     shutil.copy(DB_PATH, DWCA_DB_PATH)
-    aggregate_taxon_db(db_path=DB_PATH)
+
+    try:
+        aggregate_taxon_db(db_path=DB_PATH)
+    except Exception as err:
+        print(err)
     shutil.copy(DB_PATH, AGG_DB_PATH)
 
     try:
