@@ -42,7 +42,7 @@ def taxon_autocomplete(text: str, language='en'):
     local full-text indexed database.
     """
     ta = TaxonAutocompleter(db_path=DB_PATH)
-    fts_taxa = ta.search(text)
+    fts_taxa = ta.search(text, language=language)
     db_taxa = None
     if fts_taxa:
         fts_taxon = fts_taxa[0]
