@@ -348,7 +348,7 @@ requires-dist = [
     { name = "parquet", specifier = ">=1.3.1" },
     { name = "polars", specifier = ">=1.44.2" },
     { name = "pyarrow", specifier = ">=25.0.1" },
-    { name = "pyinaturalist-convert", specifier = ">=0.9.0" },
+    { name = "pyinaturalist-convert", specifier = ">=0.9.1" },
     { name = "sqlalchemy", specifier = ">=2.0.52" },
     { name = "xmltodict", specifier = ">=1.0.4" },
 ]
@@ -1018,16 +1018,16 @@ wheels = [
 
 [[package]]
 name = "pyinaturalist-convert"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flatten-dict" },
     { name = "pyinaturalist" },
     { name = "tablib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/8e/e055456e13774920c652c6156f2c71354c1f42f6f478170c002d15bbca8b/pyinaturalist_convert-0.9.0.tar.gz", hash = "sha256:c0d317ccdcd7fbabafc230b79bac97ace2af07483905b052fa4b083273c7e4d0", size = 52442, upload-time = "2026-09-15T18:29:34.205Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/b2/f2aa19975899f127ef198fb5207cdcba6aab946bae60b8e115cc407530b1/pyinaturalist_convert-0.9.1.tar.gz", hash = "sha256:59774b11761c67887cb599b223516e3e104ed34bab5fdb0a5a40feebe210c23b", size = 52475, upload-time = "2026-09-16T20:52:39.649Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/2c/ae1c8bdf6b0f25ecac91cfad1215be091394f98738c8f32fe0604bd3718c/pyinaturalist_convert-0.9.0-py3-none-any.whl", hash = "sha256:06531568eb3b2b7c70bba5d8a79e6703fc00296b96e43b96888413b1edfeedf2", size = 65853, upload-time = "2026-09-15T18:29:32.922Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/1e/00204050279cf9b89b08bba58ccef85563415bc59cd69a4a66da4fb9e6a0/pyinaturalist_convert-0.9.1-py3-none-any.whl", hash = "sha256:79359e644053b4f0ca795403fabdb1ccf76593f431c5c27ff753a0c78c7297e0", size = 65848, upload-time = "2026-09-16T20:52:38.269Z" },
 ]
 
 [[package]]
