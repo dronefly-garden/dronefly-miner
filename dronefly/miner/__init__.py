@@ -45,8 +45,8 @@ def taxon_autocomplete(text: str, language='en'):
     fts_taxa = ta.search(text, language=language)
     db_taxa = None
     if fts_taxa:
-        fts_taxon = fts_taxa[0]
-        db_taxa = get_db_taxa(db_path=DB_PATH, ids=[fts_taxon.id])
+        fts_taxon_ids = [t.id for t in fts_taxa]
+        db_taxa = get_db_taxa(db_path=DB_PATH, ids=fts_taxon_ids)
     return db_taxa
 
 def ta(text: str, language='en'):
