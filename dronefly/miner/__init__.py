@@ -1,31 +1,14 @@
 from platformdirs import user_data_dir
 import os
+import shutil
 
-from pyinaturalist import PathOrStr, pprint
-from pyinaturalist_convert import DWCA_OBS_CSV, DWCA_TAXON_CSV, CSVProgress, create_tables, download_dwca_observations, download_dwca_taxa, enable_logging, get_db_taxa, load_dwca_observations, load_dwca_taxa, load_fts_taxa, aggregate_taxon_db, TaxonAutocompleter, vacuum_analyze
+from pyinaturalist import pprint
+from pyinaturalist_convert import enable_logging, get_db_taxa, load_dwca_tables, load_fts_taxa, aggregate_taxon_db, TaxonAutocompleter
 
 USER_DATA_PATH = os.path.join(user_data_dir(), "dronefly-miner")
 DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
-
-def load_dwca_tables(db_path: PathOrStr = DB_PATH):
-    """Download observation and taxonomy archives and load into a SQLite database.
-
-    Args:
-        db_path: Path to SQLite database
-
-    A local version of this function from pyinaturalist_convert v0.9 that disables
-    fast mode in vacuum_analyze step to avoid running out of memory (41GB consumed
-    before being killed by OOM killer in one trial on 2026-09-16).
-    """
-    import sqlalchemy  # noqa: F401
-
-    download_dwca_observations()
-    download_dwca_taxa()
-    with CSVProgress(DWCA_OBS_CSV, DWCA_TAXON_CSV) as progress:
-        load_dwca_observations(db_path=db_path, progress=progress)
-        load_dwca_taxa(db_path=db_path, progress=progress)
-    create_tables(db_path, indexes=True)  # Create remaining tables that reference Taxon+Observation
-    vacuum_analyze(['observation', 'taxon'], db_path, show_spinner=True)
+DWCA_DB_PATH = os.path.join(USER_DATA_PATH, 'observations.dwca.db')
+AGG_DB_PATH = os.path.join(USER_DATA_PATH, 'observations.agg.db')
 
 def load_fts_data():
     """Load all full text search data.
@@ -35,9 +18,22 @@ def load_fts_data():
     supplemented by common names for all languages.
     """
     enable_logging()
-    load_dwca_tables(db_path=DB_PATH)
-    aggregate_taxon_db(db_path=DB_PATH)
-    load_fts_taxa(db_path=DB_PATH, languages='all')
+    try:
+        load_dwca_tables(db_path=DB_PATH)
+    except Exception as err:
+        print(err)
+    shutil.copy(DB_PATH, DWCA_DB_PATH)
+
+    try:
+        aggregate_taxon_db(db_path=DB_PATH)
+    except Exception as err:
+        print(err)
+    shutil.copy(DB_PATH, AGG_DB_PATH)
+
+    try:
+        load_fts_taxa(db_path=DB_PATH, languages='all')
+    except Exception as err:
+        print(err)
 
 def taxon_autocomplete(text: str, language='en'):
     """Autocomplete taxa matching text.
