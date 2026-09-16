@@ -35,9 +35,11 @@ def taxon_autocomplete(text: str, language='en'):
     local full-text indexed database.
     """
     ta = TaxonAutocompleter(db_path=DB_PATH)
-    fts_taxa = ta.search(text, language=language)
-    fts_taxon = fts_taxa[0]
-    db_taxa = get_db_taxa(db_path=DB_PATH, ids=[fts_taxon.id])
+    fts_taxa = ta.search(text)
+    db_taxa = None
+    if fts_taxa:
+        fts_taxon = fts_taxa[0]
+        db_taxa = get_db_taxa(db_path=DB_PATH, ids=[fts_taxon.id])
     return db_taxa
 
 def ta(text: str, language='en'):
@@ -48,3 +50,5 @@ def ta(text: str, language='en'):
     db_taxa = taxon_autocomplete(text, language=language)
     if db_taxa:
         pprint(next(db_taxa))
+    else:
+        print(f"Not found: {text}")
