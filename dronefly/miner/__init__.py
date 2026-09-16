@@ -22,7 +22,11 @@ def load_fts_data():
     shutil.copy(DB_PATH, DWCA_DB_PATH)
     aggregate_taxon_db(db_path=DB_PATH)
     shutil.copy(DB_PATH, AGG_DB_PATH)
-    load_fts_taxa(db_path=DB_PATH, languages=['all'])
+
+    try:
+        load_fts_taxa(db_path=DB_PATH, languages='all')
+    except Exception as err:
+        print(err)
 
 def taxon_autocomplete(text: str, language='en'):
     """Autocomplete taxa matching text.
