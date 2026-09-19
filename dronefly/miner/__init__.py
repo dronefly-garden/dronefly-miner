@@ -19,12 +19,15 @@ def load_fts_data():
     aggregate_taxon_db(db_path=DB_PATH)
     load_fts_taxa(db_path=DB_PATH, languages='all')
 
-def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocompleter = TaxonAutocompleter(db_path=DB_PATH)):
+def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocompleter = None):
     """Autocomplete taxa matching text.
 
     Autocompletion results are retrieved with a fast lookup against the
     local full-text indexed database.
     """
+    global default_taxon_autocompleter
+    default_taxon_autocompleter = None
+
     def hydrate_fts_taxa(fts_taxa):
         fts_taxon_ids = [t.id for t in fts_taxa]
         _db_taxa = [t for t in get_db_taxa(db_path=DB_PATH, ids=fts_taxon_ids)]
@@ -35,8 +38,14 @@ def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocomplet
             taxon.matched_term = fts_taxa[i].name
             db_taxa.append(taxon)
         return db_taxa
-
-    fts_taxa = autocompleter.search(text, language=language, deduplicate=True)
+    _autocompleter = None
+    if autocompleter:
+        _autocompleter = autocompleter
+    else:
+        if not default_taxon_autocompleter:
+            default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
+        _autocompleter = default_taxon_autocompleter
+    fts_taxa = _autocompleter.search(text, language=language, deduplicate=True)
     db_taxa = None
     if fts_taxa:
         db_taxa = hydrate_fts_taxa(fts_taxa)
