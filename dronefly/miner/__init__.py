@@ -26,7 +26,6 @@ def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocomplet
     local full-text indexed database.
     """
     global default_taxon_autocompleter
-    default_taxon_autocompleter = None
 
     def hydrate_fts_taxa(fts_taxa):
         fts_taxon_ids = [t.id for t in fts_taxa]
@@ -42,7 +41,9 @@ def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocomplet
     if autocompleter:
         _autocompleter = autocompleter
     else:
-        if not default_taxon_autocompleter:
+        try:
+            default_taxon_autocompleter
+        except NameError:
             default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
         _autocompleter = default_taxon_autocompleter
     fts_taxa = _autocompleter.search(text, language=language, deduplicate=True)
