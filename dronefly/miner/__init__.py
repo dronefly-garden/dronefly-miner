@@ -1,11 +1,13 @@
 from platformdirs import user_data_dir
 import os
+import re
 
 from pyinaturalist import pprint
 from pyinaturalist_convert import enable_logging, get_db_taxa, load_dwca_tables, load_fts_taxa, aggregate_taxon_db, TaxonAutocompleter
 
 USER_DATA_PATH = os.path.join(user_data_dir(), "dronefly-miner")
 DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
+FTS5_TOKEN_SEPARATOR_CHARS = re.compile(r"-")
 
 def load_fts_data():
     """Load all full text search data.
@@ -46,7 +48,9 @@ def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocomplet
         except NameError:
             default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
         _autocompleter = default_taxon_autocompleter
-    fts_taxa = _autocompleter.search(text, language=language, deduplicate=True)
+    # Temporary workaround for https://github.com/pyinat/pyinaturalist-convert/issues/235
+    _text = FTS5_TOKEN_SEPARATOR_CHARS.sub(' ', text)
+    fts_taxa = _autocompleter.search(_text, language=language, deduplicate=True)
     db_taxa = None
     if fts_taxa:
         db_taxa = hydrate_fts_taxa(fts_taxa)
