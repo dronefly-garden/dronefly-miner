@@ -21,7 +21,7 @@ def load_fts_data():
     aggregate_taxon_db(db_path=DB_PATH)
     load_fts_taxa(db_path=DB_PATH, languages='all')
 
-def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocompleter = None):
+def taxon_autocomplete(text: str, language='en', rank=None, autocompleter: TaxonAutocompleter = None):
     """Autocomplete taxa matching text.
 
     Autocompletion results are retrieved with a fast lookup against the
@@ -50,7 +50,7 @@ def taxon_autocomplete(text: str, language='en', autocompleter: TaxonAutocomplet
         _autocompleter = default_taxon_autocompleter
     # Temporary workaround for https://github.com/pyinat/pyinaturalist-convert/issues/235
     _text = FTS5_TOKEN_SEPARATOR_CHARS.sub(' ', text)
-    fts_taxa = _autocompleter.search(_text, language=language, deduplicate=True)
+    fts_taxa = _autocompleter.search(_text, language=language, rank=rank, deduplicate=True)
     db_taxa = None
     if fts_taxa:
         db_taxa = hydrate_fts_taxa(fts_taxa)
