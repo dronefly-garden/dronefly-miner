@@ -1,3 +1,5 @@
+from inspect import signature
+import logging
 from platformdirs import user_data_dir
 import os
 
@@ -6,6 +8,9 @@ from pyinaturalist_convert import enable_logging, get_db_taxa, load_dwca_tables,
 
 USER_DATA_PATH = os.path.join(user_data_dir(), "dronefly-miner")
 DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
+
+logger = logging.getLogger("dronefly.miner")
+logger.setLevel(logging.INFO)
 
 def load_fts_data():
     """Load all full text search data.
@@ -46,7 +51,21 @@ def taxon_autocomplete(text: str, language='en', rank=None, autocompleter: Taxon
         except NameError:
             default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
         _autocompleter = default_taxon_autocompleter
-    fts_taxa = _autocompleter.search(text, language=language, taxon_rank=rank)
+
+    # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
+    # and submit PR upstream. If taxon_rank is approved and incorporated upstream, bump our dependency
+    # to the new version, drop the signature check and warning, and unconditionally supply the parameter.
+    kwargs = {"language": language}
+    if "taxon_rank" in signature(_autocompleter.search).parameters:
+        kwargs["taxon_rank"] = rank
+    else:
+        if rank:
+            # Not much else we can do here but notify the bot operator, as the
+            # help text claims to support rank filtering, but the bot is not using
+            # an autocompleter implementation that supports it.
+            logger.warning("TaxonAutocompleter.search has no taxon_rank parameter; ignoring: %s", rank)
+    fts_taxa = _autocompleter.search(text, **kwargs)
+
     db_taxa = None
     if fts_taxa:
         db_taxa = hydrate_fts_taxa(fts_taxa)
