@@ -1,19 +1,10 @@
 # Dronefly Miner
 
-This library supports populating and indexing a database for
-[dronefly-core](https://github.com/dronefly-garden/dronefly-core)
-from the biodiversity data sets published by iNaturalist.
+This library supports fast local taxon name searches against
+a database built from iNaturalist DWC-A exports.
 
-# Related packages
-
-## Dronefly core
-
-The [dronefly-core](https://github.com/dronefly-garden/dronefly-core)
-package is an incomplete rewrite of [Dronefly](https://dronefly.readthedocs.io/)
-Discord bot's core components.
-
-## Dronefly Discord bot
-
-Dronefly Discord bot brings [iNaturalist](https://www.inaturalist.org) taxa,
-observations, and other data from the site into conversations on the
-[Discord](https://discord.com) chat platform.
+It is used by [Dronefly bot](https://github.com/dronefly-garden/dronefly)
+to support taxon name autocompletion. It would be impractical to
+use iNaturalist API calls to do this, as it would be slow and/or
+exceed the rate limit fairly quickly with anything more than
+trivial workloads.
