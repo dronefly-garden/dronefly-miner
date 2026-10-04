@@ -19,7 +19,8 @@ API rate limits.
         - ~250GB iNaturalist DWC-A export files & derived work files
     - `~/.local/share/dronefly-miner/observations.db`
         - ~50GB database built from those files
-- A full build takes roughly 1.5 hrs on the developer's system:
+- A full build takes a few hours on the developer's system, whereas
+  a regular build takes minutes.
     - *System:* Ryzen 7 255, 32GB ram, and nvme ssd
     - *Network:* 1Gbps residential FTH
 
@@ -76,16 +77,21 @@ to the aggregated observation counts, but for the most part,
 relevance won't suffer much from working off of outdated
 observation counts.
 
-### Scheduling builds with cron
-
-To run daily regular builds at midnight and monthly full builds
-at half past midnight on the first day of each month, run
-`crontab -e` as the bot user:
-
+Database updates place a lot of demand on CPU. To give other
+processes on the system during database updates, reduce
+priority, e.g.
 ```
+nice -n 19 uvx dronefly-miner build --full
+```
+
+### Example scheduled job configuration
+
+Dronefly runs on the `redbot` account. The taxonomy is updated at midnight
+nightly, and the observation counts are updated at half past midnight monthly:
+
+```sh
+$ crontab -l
 # m h dom mon dow   command
-0 0 * * 1 /home/redbot/.local/bin/uvx dronefly-miner build
-30 0 1 * * /home/redbot/.local/bin/uvx dronefly-miner build --full
+  0 0   *   *   1   /bin/nice -n 19 /home/redbot/.local/bin/uvx dronefly-miner build
+ 30 0   1   *   *   /bin/nice -n 19 /home/redbot/.local/bin/uvx dronefly-miner build --full
 ```
-
-Edit the path to uvx as needed.
