@@ -1,10 +1,23 @@
 from inspect import signature
 import logging
+from typing import Union
 from platformdirs import user_data_dir
 import os
 
 from pyinaturalist import pprint
-from pyinaturalist_convert import enable_logging, get_db_taxa, load_dwca_tables, load_fts_taxa, aggregate_taxon_db, TaxonAutocompleter
+from pyinaturalist_convert import (
+    CSVProgress,
+    DWCA_TAXON_CSV,
+    create_tables,
+    download_dwca_taxa,
+    enable_logging,
+    get_db_taxa,
+    load_dwca_tables,
+    load_dwca_taxa,
+    load_fts_taxa,
+    aggregate_taxon_db,
+    TaxonAutocompleter,
+)
 
 USER_DATA_PATH = os.path.join(user_data_dir(), "dronefly-miner")
 DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
@@ -12,7 +25,7 @@ DB_PATH = os.path.join(USER_DATA_PATH, 'observations.db')
 logger = logging.getLogger("dronefly.miner")
 logger.setLevel(logging.INFO)
 
-def load_fts_data():
+def load_fts_data(full: bool=False, languages: Union[str, list[str]]='all', db_path: str=DB_PATH):
     """Load all full text search data.
 
     Downloads, builds, and indexes a local database from iNaturalist
@@ -20,9 +33,20 @@ def load_fts_data():
     supplemented by common names for all languages.
     """
     enable_logging()
-    load_dwca_tables(db_path=DB_PATH)
-    aggregate_taxon_db(db_path=DB_PATH)
-    load_fts_taxa(db_path=DB_PATH, languages='all')
+    if full:
+        load_dwca_tables(db_path=db_path)
+        aggregate_taxon_db(db_path=db_path)
+    else:
+        # Skip the expensive observations load and taxon counts aggregation:
+        # - The taxon_aggregates.parquet file will be out of date, so any new taxa
+        #   will be missing observation counts, and observation counts for existing
+        #   taxa will be out of date. This will degrade relevance ranking somewhat,
+        #   but for most taxa should have a minimal effect.
+        download_dwca_taxa()
+        with CSVProgress(DWCA_TAXON_CSV) as progress:
+            load_dwca_taxa(db_path=db_path, progress=progress)
+            create_tables(db_path, indexes=True)
+    load_fts_taxa(db_path=db_path, languages=languages)
 
 def taxon_autocomplete(text: str, language='en', rank=None, autocompleter: TaxonAutocompleter = None):
     """Autocomplete taxa matching text.
