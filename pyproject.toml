@@ -24,6 +24,9 @@ dependencies = [
     "xmltodict>=1.0.4",
 ]
 
+[project.scripts]
+dronefly-miner = "dronefly.miner.cli:main"
+
 [tool.bandit]
 exclude_dirs = ["tests"]
 
