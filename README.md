@@ -13,85 +13,53 @@ API rate limits.
 
 ## Requirements
 
-- Sufficient disk space for the files, about 300GB total if you
-  perform full builds (highly recommended):
-    - `~/.local/share/pyinaturalist/*`
-        - ~250GB iNaturalist DWC-A export files & derived work files
-    - `~/.local/share/dronefly-miner/observations.db`
-        - ~50GB database built from those files
-- A full build takes 4.5 hours on the developer's system, whereas
-  a regular build takes less than 2 minutes.
+- Sufficient disk space for the files, about 30GB total:
+    - `~/.local/share/dronefly-miner/*`
+        - ~28 GB iNaturalist DWC-A observations
+        - ~660 MB iNaturalist DWC-A taxonomy
+        - ~770 MB database built from those files
+- A build takes under a half hour on the developer's system:
     - *System:* Ryzen 7 255, 32GB ram, and nvme ssd
     - *Network:* 1Gbps residential FTH
 
 ## Build the database
 
 1. Install uv from https://docs.astral.sh/uv
-2. Perform an initial full build of the database with:
-```
-uvx run dronefly-miner build --full
-```
-
-Confirm that the build is successful and restart the bot to
-test autocompletion with `/taxon show taxon:`. Upon first
-use, the results may be empty. Once the database connection
-is primed, autocompletions should be fairly quick.
-
-## Schedule the database updates
-
-Frequency of database updates is up to you. Consider
-the following:
-
-- Files for either data set will only be downloaded if newer
-  versions are available.
-- The iNaturalist taxonomy DWC-A archive is updated monthly.
-  - This fairly small data set that loads quickly and should
-    not interrupt bot functions while loading.
-- The iNaturalist observations DWC-A archive is updated weekly.
-  - This is a massive data set that takes a long time to load
-    and disrupts autocompletions while loading.
-
-### Recommended schedule
-
-In order to update the taxonomy as soon as iNaturalist
-publishes a new data set, but without minimal disruption to users,
-we recommend nightly builds without `--full`:
-
+2. Perform an initial build of the database with:
 ```
 uvx dronefly-miner build
 ```
 
-The more costly full build should be performed at most weekly,
-and monthly is probably sufficient:
+Confirm that the build is successful and restart the bot to
+test autocompletion with `/taxon show`. Upon first use, the
+results may be empty. Once the database connection is
+primed, autocompletions should be fairly quick.
 
-```
-uvx dronefly-miner build --full
-```
+## Schedule database updates
 
-Full builds can be skipped entirely, but relevance ranking
-will suffer. A compromise that might work for you is to
-schedule less frequent full builds, or leave it as a manual
-step on an as-needed basis. Any new taxa added to the
-taxonomy will be downranked in the results without updates
-to the aggregated observation counts, but for the most part,
-relevance won't suffer much from working off of outdated
-observation counts.
+In order to update the database as soon as iNaturalist
+publishes new DWC-A archives of either the taxonomy or
+GBIF observations data sets, schedule nightly runs
+of `dronefly-miner build`. Archives won't be downloaded
+unless newer versions are available, and the database
+build will be skipped if nothing was downloaded and the
+database exists.
 
-Database updates place a lot of demand on CPU. To give other
-processes on the system during database updates, reduce
-priority, e.g.
-```
-nice -n 19 uvx dronefly-miner build --full
-```
+## Example scheduled build
 
-### Example scheduled job configuration
-
-Dronefly runs on the `redbot` account. The taxonomy is updated at 00:30
-daily, and the observation counts are updated at 01:00 monthly:
+Dronefly bot runs from the `redbot` account. Dronefly-miner
+builds run on the same account daily at 1 am local time at
+reduced priority to minimize impact on other processes:
 
 ```sh
+$ cat > ~/bin/dronefly-miner.sh
+#!/bin/bash
+cd /home/redbot/dronefly-miner
+/home/synrg/.local/bin/uv run dronefly-miner build > /home/redbot/.local/share/dronefly-miner/build.log 2>&1
+$ chmod a+rx ~/bin/dronefly-miner.sh
+$ crontab -e
+… *edit to match below*
 $ crontab -l
 # m h dom mon dow   command
- 30 0   *   *   *   /bin/nice -n 19 /home/redbot/.local/bin/uvx dronefly-miner build
-  0 1   1   *   *   /bin/nice -n 19 /home/redbot/.local/bin/uvx dronefly-miner build --full
+  0 1   *   *   *   /bin/nice -n 19 /home/redbot/bin/dronefly-miner.sh
 ```
