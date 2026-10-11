@@ -143,6 +143,14 @@ def load_fts_data(languages: Union[str, list[str]]='all'):
     data exported to GBIF as DWCA-A taxonomy and observation data sets,
     supplemented by common names for all languages.
     """
+    def _cleanup(staging_db):
+        staging_shm = Path(str(staging_db) + "-shm")
+        staging_wal = Path(str(staging_db) + "-wal")
+
+        for sidecar in (staging_shm, staging_wal):
+            if sidecar.exists():
+                sidecar.unlink()
+
     enable_logging()
     DWCA_TAXON_ZIP.parent.mkdir(parents=True, exist_ok=True)
 
@@ -176,12 +184,14 @@ def load_fts_data(languages: Union[str, list[str]]='all'):
         load_fts_taxa(csv_dir=DWCA_TAXON_CSV_DIR, db_path=staging_db, agg_path=TAXON_AGGREGATES_PATH, languages=languages)
 
         staging_db.replace(DB_PATH)
+        _cleanup(staging_db)
         print(f"[green]Successfully updated database: {DB_PATH}")
 
     except Exception as e:
         print(f"[red]Build failed: {e}")
         if staging_db.exists():
             staging_db.unlink()
+            _cleanup(staging_db)
         raise
 
 
