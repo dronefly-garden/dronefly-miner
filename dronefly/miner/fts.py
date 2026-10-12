@@ -195,7 +195,7 @@ def load_fts_data(languages: Union[str, list[str]]='all'):
         raise
 
 
-def taxon_autocomplete(text: str, language='en', rank=None, autocompleter: TaxonAutocompleter = None):
+def taxon_autocomplete(text: str, language=None, rank=None, autocompleter: TaxonAutocompleter = None):
     """Autocomplete taxa matching text.
 
     Autocompletion results are retrieved with a fast lookup against the
