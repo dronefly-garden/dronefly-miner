@@ -226,7 +226,7 @@ def taxon_autocomplete(text: str, language='en', rank=None, autocompleter: Taxon
     # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
     # and submit PR upstream. If taxon_rank is approved and incorporated upstream, bump our dependency
     # to the new version, drop the signature check and warning, and unconditionally supply the parameter.
-    kwargs = {"language": language}
+    kwargs = {"language": language, "prefix_all": True}
     if "taxon_rank" in signature(_autocompleter.search).parameters:
         kwargs["taxon_rank"] = rank
     else:
