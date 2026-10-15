@@ -195,7 +195,7 @@ def load_fts_data(languages: Union[str, list[str]]='all'):
         raise
 
 
-def taxon_autocomplete(text: str, language=None, rank=None, autocompleter: TaxonAutocompleter = None):
+def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autocompleter: TaxonAutocompleter = None):
     """Autocomplete taxa matching text.
 
     Autocompletion results are retrieved with a fast lookup against the
@@ -220,13 +220,13 @@ def taxon_autocomplete(text: str, language=None, rank=None, autocompleter: Taxon
         try:
             default_taxon_autocompleter
         except NameError:
-            default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
+            default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=100)
         _autocompleter = default_taxon_autocompleter
 
     # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
     # and submit PR upstream. If taxon_rank is approved and incorporated upstream, bump our dependency
     # to the new version, drop the signature check and warning, and unconditionally supply the parameter.
-    kwargs = {"language": language}
+    kwargs = {"language": language, "taxon_id": taxon_id}
     if "taxon_rank" in signature(_autocompleter.search).parameters:
         kwargs["taxon_rank"] = rank
     else:
