@@ -137,9 +137,9 @@ def calculate_overlap_metrics(local_items: list, api_items: list, k: int = 5) ->
         f"top_{k}_overlap_pct": overlap_ratio * 100
     }
 
-def run_evaluation(strategy: TaxonScoringStrategy | None = None):
+def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = None):
     print("==================================================")
-    print("RUNNING AUTOCOMPLETE RANKING EVALUATION")
+    print(f"RUNNING AUTOCOMPLETE RANKING EVALUATION: {name or str(strategy.__class__)}")
     print("==================================================")
 
     for case in TEST_SUITES:
@@ -193,9 +193,73 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None):
                 api_str = f"{r['name']} ({r['observations_count']} obs)"
 
             print(f"   {i+1:2d}    | {loc_str:<42} | {api_str}")
-        print("\n" + "=" * 50)
+
+def run_evaluation_suite():
+    for (name, strategy) in STRATEGIES_TO_TEST.items():
+        run_evaluation(strategy=strategy, name=name)
+
+    summary_results = []
+    for case in TEST_SUITES:
+        # Fetch API reference results once per test case
+        api_results = get_api_results(case)
+
+        for strat_name, strategy in STRATEGIES_TO_TEST.items():
+            # Run local search with this specific strategy
+            local_raw = taxon_autocomplete(
+                text=case.text,
+                taxon_id=case.taxon_id,
+                language=case.language,
+                rank=case.rank,
+                strategy=strategy
+            )[:case.limit]
+            
+            local_results = [
+                {
+                    "id": t.id,
+                    "name": t.name,
+                    "matched_term": getattr(t, "matched_term", ""),
+                }
+                for t in local_raw
+            ]
+
+            # Calculate metrics
+            rbo_score = calculate_rbo(local_results, api_results, p=0.85)
+            pos_score = calculate_position_weighted_score(local_results, api_results, max_k=5)
+
+            summary_results.append({
+                "test_name": case.name,
+                "strategy": strat_name,
+                "rbo": rbo_score,
+                "top_5_pos_score": pos_score * 100,
+                "top_result": local_results[0]["name"] if local_results else "None",
+                "api_top_result": api_results[0]["name"] if api_results else "None"
+            })
+
+    # Render a clean comparative summary table
+    print("\n" + "=" * 123)
+    print("EVALUATION SUMMARY TABLE")
+    print("=" * 123)
+    print(f"| {'Test Case':<32} | {'Strategy':<22} | {'RBO Score':<10} | {'Top-5 Pos %':<11} | {'Local #1':<32} |")
+    print("|" + "-" * 34 + "|" + "-" * 24 + "|" + "-" * 12 + "|" + "-" * 13 + "|" + "-" * 34 + "|")
+
+    for res in summary_results:
+        print(
+            f"| {res['test_name']:<32} | "
+            f"{res['strategy']:<22} | "
+            f"{res['rbo']:<10.3f} | "
+            f"{res['top_5_pos_score']:<10.1f}% | "
+            f"{res['top_result']:<32} |"
+        )
+    print("=" * 123)
+
+@dataclass
+class CandidateStrategy(TaxonScoringStrategy):
+    locale_prefix_boost: float = -60.0
+
+STRATEGIES_TO_TEST = {
+    "Baseline (Default)": TaxonScoringStrategy(),
+    "Candidate": CandidateStrategy(),
+}
 
 if __name__ == "__main__":
-    # You can pass custom strategies here to test variations!
-    run_evaluation()
-    
+    run_evaluation_suite()
