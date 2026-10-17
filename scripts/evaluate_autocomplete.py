@@ -1,3 +1,9 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#   "dronefly-core"
+# ]
+# ///
 import sys
 from dataclasses import dataclass
 from typing import Any
