@@ -14,7 +14,7 @@ from pyinaturalist_convert import (
     DWCA_TAXA_URL,
     DWCA_URL,
     TaxonAutocompleter,
-    create_tables,
+    TaxonScoringStrategy,
     download_file,
     enable_logging,
     get_db_taxa,
@@ -195,7 +195,7 @@ def load_fts_data(languages: Union[str, list[str]]='all'):
         raise
 
 
-def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autocompleter: TaxonAutocompleter = None):
+def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autocompleter: TaxonAutocompleter=None, strategy: TaxonScoringStrategy=None):
     """Autocomplete taxa matching text.
 
     Autocompletion results are retrieved with a fast lookup against the
@@ -226,7 +226,7 @@ def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autoc
     # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
     # and submit PR upstream. If taxon_rank is approved and incorporated upstream, bump our dependency
     # to the new version, drop the signature check and warning, and unconditionally supply the parameter.
-    kwargs = {"language": language, "taxon_id": taxon_id}
+    kwargs = {"language": language, "taxon_id": taxon_id, "strategy": strategy}
     if "taxon_rank" in signature(_autocompleter.search).parameters:
         kwargs["taxon_rank"] = rank
     else:
