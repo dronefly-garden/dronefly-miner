@@ -6,8 +6,6 @@
 # ///
 import sys
 from dataclasses import dataclass
-from typing import Any
-from pprint import pprint
 from dronefly.core import Context, iNatClient
 from dronefly.miner import taxon_autocomplete
 from pyinaturalist_convert.fts import TaxonScoringStrategy
@@ -19,7 +17,7 @@ class EvalCase:
     taxon_id: int | None = None
     language: str | None = None
     rank: str | None = None
-    limit: int = 10
+    limit: int = 200
 
 # Define your test suite here
 TEST_SUITES = [
@@ -27,25 +25,26 @@ TEST_SUITES = [
         name="Halictidae + 'gold'",
         text="gold",
         taxon_id=49707,
-        limit=10
     ),
     EvalCase(
         name="Global + 'butter'",
         text="butter",
         taxon_id=None,
-        limit=10
     ),
     EvalCase(
         name="Global + 'butter and'",
         text="butter and",
         taxon_id=None,
-        limit=10
     ),
     EvalCase(
         name="Global + 'butter and eggs'",
         text="butter and eggs",
         taxon_id=None,
-        limit=10
+    ),
+    EvalCase(
+        name="Global + 'extra extra'",
+        text="extra extra",
+        taxon_id=None,
     ),
 ]
 
