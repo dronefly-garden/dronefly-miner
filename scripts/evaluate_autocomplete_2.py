@@ -4,11 +4,10 @@ import subprocess
 import sys
 import csv
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from urllib.parse import parse_qs, urlparse, unquote
 import sqlite3
 
-from pyinaturalist import iNatClient
 from pyinaturalist_convert import TaxonAutocompleter
 from dronefly.miner import taxon_autocomplete, DB_PATH
 
@@ -228,7 +227,9 @@ def get_local_max_taxon_id(db_path=DB_PATH):
 def main():
     # Option 1: Read from journalctl stream or a saved log dump file if available.
     print("Fetching logs from journalctl...")
-    cmd = ["journalctl", "--unit", "red@Dronefly", "--unit", "red@SeedWasp"]
+    # - All Dronefly & SeedWasp logs until 2026-10-22T07:00 so we can compare subsequent
+    #   runs on the same full data set without more recent entries added to it.
+    cmd = ["journalctl", "--unit", "red@Dronefly", "--unit", "red@SeedWasp", "--until", "2026-10-22T07:00"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         log_lines = result.stdout.splitlines()
