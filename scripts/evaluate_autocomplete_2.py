@@ -84,11 +84,23 @@ def extract_and_evaluate_pairs(log_lines):
             taxon_id_values = parsed_params.get('taxon_id', [None])
             req_taxon_id = int(taxon_id_values[0]) if taxon_id_values[0] else None
 
+            # Extract locale parameter if present
+            locale_values = parsed_params.get('locale', [None])
+            locale = locale_values[0] if locale_values[0] else None
+
+            # Discard scientific locale tests per dronefly-core special casing
+            # - In dronefly-core, match_taxon gives scientific names a bump
+            #   and that messes with our evaluation of the FTS autocomplete
+            #   vs. pure iNat API /v1/taxa/autocomplete as our reference
+            #   implementation we're striving to reach parity with.
+            if locale == 'sci':
+                continue
             events.append({
                 'type': 'autocomplete',
                 'time': parse_log_timestamp(d['timestamp']),
                 'query': decoded_query,
-                'param_taxon_id': req_taxon_id
+                'param_taxon_id': req_taxon_id,
+                'locale': locale
             })
             continue
 
@@ -131,6 +143,14 @@ def extract_and_evaluate_pairs(log_lines):
                         continue
 
             # Otherwise, check for standard triad or single pair logic as before...
+            # - these result from `,t related`. actually instead of a triad you can
+            #   have an arbitrary number of related but:
+            #   - triads are the norm (autocomplete?q=text1, autocomplete?q=text2, taxa/#)
+            #   - detection of a final triad is sufficient to find and throw out this case,
+            #     (i.e. don't count as a pair)
+            #   - we can't use it because the matched taxon id# doesn't line up with any
+            #     one string that was searched, but only to their children, and unfortunately
+            #     the logs don't have those intermediate results
             ac1 = batch_acs[0]
 
             # Check for Triad: ac1 -> ac2 (with param_taxon_id) -> dt
@@ -149,13 +169,15 @@ def extract_and_evaluate_pairs(log_lines):
                     'query': ac1['query'],
                     'selected_taxon_id': parent_id,
                     'parent_taxon_id': None,
-                    'timestamp': ac1['time'].isoformat()
+                    'timestamp': ac1['time'].isoformat(),
+                    'locale': ac1.get('locale')
                 })
                 pairs.append({
                     'query': ac2['query'],
                     'selected_taxon_id': dt['taxon_id'],
                     'parent_taxon_id': parent_id,
-                    'timestamp': ac2['time'].isoformat()
+                    'timestamp': ac2['time'].isoformat(),
+                    'locale': ac2.get('locale')
                 })
                 i += 3
                 continue
@@ -172,7 +194,8 @@ def extract_and_evaluate_pairs(log_lines):
                         'query': ac1['query'],
                         'selected_taxon_id': next_event['taxon_id'],
                         'parent_taxon_id': None,
-                        'timestamp': ac1['time'].isoformat()
+                        'timestamp': ac1['time'].isoformat(),
+                        'locale': ac1.get('locale')
                     })
                     matched_standard = True
                     i = k + 1
@@ -230,8 +253,9 @@ def main():
         selected_id = int(p['selected_taxon_id'])
         parent_id = p['parent_taxon_id']
         timestamp = p['timestamp']
+        locale = p.get('locale')
 
-        results = taxon_autocomplete(text=query, autocompleter=autocompleter, language=None, taxon_id=parent_id)
+        results = taxon_autocomplete(text=query, autocompleter=autocompleter, language=locale, taxon_id=parent_id)
         result_ids = [taxon.id for taxon in results] if results else []
 
         rank = None
