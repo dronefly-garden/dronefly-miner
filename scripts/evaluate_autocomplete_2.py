@@ -45,6 +45,19 @@ def get_autocomplete_results(query_lower, taxon_id):
     else:
         return []
 
+def get_ancestor_ids(selected_id, db_path=DB_PATH):
+    """Fetches and parses ancestor IDs for a given taxon once."""
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT ancestor_ids FROM taxon WHERE id = ?", (selected_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                return {int(x.strip()) for x in row[0].split(',') if x.strip().isdigit()}
+    except Exception as e:
+        print(f"Warning: Ancestor query failed ({e})")
+    return set()
+
 def is_ancestor_match(top_id, selected_id, db_path=DB_PATH):
     """
     Checks if top_id is an ancestor of selected_id by checking the 
@@ -260,6 +273,11 @@ def main():
         result_ids = [taxon.id for taxon in results] if results else []
 
         rank = None
+        # matched_as_ancestor represents the case where `,obs my` or similar
+        # returned a child taxon of the actual taxon that Dronefly matched
+        # to the query string (and unfortunately didn't log that taxon id)
+        # - we traverse the ancestry of all autocompleted taxon ids to find
+        #   the lowest-ranked (closest to top, i.e. best) match
         matched_as_ancestor = False
         resolved_taxon_id = selected_id
 
@@ -267,13 +285,25 @@ def main():
             if selected_id in result_ids:
                 rank = result_ids.index(selected_id) + 1
                 resolved_taxon_id = selected_id
-            else:
-                for idx, r_id in enumerate(result_ids):
-                    if is_ancestor_match(r_id, selected_id):
-                        rank = idx + 1
+            
+            ancestors = get_ancestor_ids(selected_id)
+
+            lowest_rank = rank if rank == 1 else 999999
+            for idx, r_id in enumerate(result_ids):
+                current_rank = idx + 1
+                if current_rank >= lowest_rank:
+                    continue
+                
+                if r_id == selected_id or r_id in ancestors:
+                    lowest_rank = current_rank
+                    resolved_taxon_id = r_id
+                    if r_id != selected_id:
                         matched_as_ancestor = True
-                        resolved_taxon_id = r_id
+                    if lowest_rank == 1:
                         break
+            
+            if lowest_rank != 999999:
+                rank = lowest_rank
 
         row_data = {
             'query': query,
