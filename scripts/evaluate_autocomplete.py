@@ -46,6 +46,11 @@ TEST_SUITES = [
         text="extra extra",
         taxon_id=None,
     ),
+    EvalCase(
+        name="Global + 'sarco'",
+        text="sarco",
+        taxon_id=None,
+    ),
 ]
 
 def get_api_results(case: EvalCase) -> list[dict]:
@@ -253,7 +258,7 @@ def run_evaluation_suite():
 
 @dataclass
 class CandidateStrategy(TaxonScoringStrategy):
-    locale_prefix_boost: float = -60.0
+    length_penalty_factor: float = 0.0
 
 STRATEGIES_TO_TEST = {
     "Baseline (Default)": TaxonScoringStrategy(),
