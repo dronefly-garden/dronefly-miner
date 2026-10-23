@@ -51,6 +51,71 @@ TEST_SUITES = [
         text="sarco",
         taxon_id=None,
     ),
+    EvalCase(
+        name="Global + 'squirrel'",
+        text="squirrel",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'pseudoscorp'",
+        text="pseudoscorp",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'scoter'",
+        text="scoter",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'mold'",
+        text="mold",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'lunula'",
+        text="lunula",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'spinach'",
+        text="spinach",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'goose'",
+        text="goose",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'skunk'",
+        text="skunk",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'roadrunner'",
+        text="roadrunner",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'copperhead'",
+        text="copperhead",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'creosote'",
+        text="creosote",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'longspur'",
+        text="longspur",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'hoggi'",
+        text="hoggi",
+        taxon_id=None,
+    ),
 ]
 
 def get_api_results(case: EvalCase) -> list[dict]:
@@ -199,8 +264,8 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
             print(f"   {i+1:2d}    | {loc_str:<42} | {api_str}")
 
 def run_evaluation_suite():
-    for (name, strategy) in STRATEGIES_TO_TEST.items():
-        run_evaluation(strategy=strategy, name=name)
+    #for (name, strategy) in STRATEGIES_TO_TEST.items():
+    #   run_evaluation(strategy=strategy, name=name)
 
     summary_results = []
     for case in TEST_SUITES:
@@ -259,6 +324,9 @@ def run_evaluation_suite():
 @dataclass
 class CandidateStrategy(TaxonScoringStrategy):
     length_penalty_factor: float = 0.0
+    general_prefix_boost: 80.0
+    english_lang_boost: 110.0
+    
 
 STRATEGIES_TO_TEST = {
     "Baseline (Default)": TaxonScoringStrategy(),
