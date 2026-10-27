@@ -116,6 +116,11 @@ TEST_SUITES = [
         text="hoggi",
         taxon_id=None,
     ),
+    EvalCase(
+        name="Global + 'trump'",
+        text="trump",
+        taxon_id=None,
+    ),
 ]
 
 def get_api_results(case: EvalCase) -> list[dict]:
@@ -129,6 +134,7 @@ def get_api_results(case: EvalCase) -> list[dict]:
             per_page=case.limit,
             all_names=True,
             limit=case.limit,
+            ttl=14400, # 4 hour ttl to make test results stable across many consecutive iterations
         )
         items = response.all()
         return [
@@ -145,11 +151,6 @@ def get_api_results(case: EvalCase) -> list[dict]:
         return []
 
 def calculate_rbo(local_items: list[dict], api_items: list[dict], p: float = 0.85) -> float:
-    """
-    Calculates Rank-Biased Overlap (RBO) between two ranked lists.
-    p (0 < p < 1) controls persistence: higher values give more weight to deeper items,
-    lower values focus heavily on the top few results (e.g., p=0.85 weights the top ~5 heavily).
-    """
     local_ids = [item["id"] for item in local_items]
     api_ids = [item["id"] for item in api_items]
     
@@ -165,19 +166,13 @@ def calculate_rbo(local_items: list[dict], api_items: list[dict], p: float = 0.8
         set_a = set(api_ids[:d])
         intersect_len = len(set_l.intersection(set_a))
         
-        # Agreement at depth d
         agreement = (2.0 * intersect_len) / (len(set_l) + len(set_a)) if (len(set_l) + len(set_a)) > 0 else 0.0
         score += weight * (p ** (d - 1)) * agreement
         
     return score
 
 def calculate_position_weighted_score(local_items: list[dict], api_items: list[dict], max_k: int = 5) -> float:
-    """
-    Computes a score from 0.0 to 1.0 based on position alignment.
-    An item matching at rank 1 gives full weight; lower ranks decay linearly.
-    """
     api_id_to_rank = {item["id"]: idx for idx, item in enumerate(api_items[:max_k])}
-    
     total_possible_score = sum(1.0 - (i / max_k) for i in range(max_k))
     earned_score = 0.0
     
@@ -185,9 +180,7 @@ def calculate_position_weighted_score(local_items: list[dict], api_items: list[d
         item_id = item["id"]
         if item_id in api_id_to_rank:
             api_idx = api_id_to_rank[item_id]
-            # Reward proximity: small position difference gets higher points
             position_diff = abs(local_idx - api_idx)
-            # Base weight for the slot minus a penalty for distance
             slot_weight = 1.0 - (local_idx / max_k)
             distance_penalty = position_diff * 0.15
             earned_score += max(0.0, slot_weight - distance_penalty)
@@ -195,7 +188,6 @@ def calculate_position_weighted_score(local_items: list[dict], api_items: list[d
     return min(1.0, earned_score / total_possible_score if total_possible_score > 0 else 0.0)
 
 def calculate_overlap_metrics(local_items: list, api_items: list, k: int = 5) -> dict:
-    """Calculates top-K set intersection overlap."""
     local_ids = {item["id"] for item in local_items[:k]}
     api_ids = {item["id"] for item in api_items[:k]}
     
@@ -208,14 +200,13 @@ def calculate_overlap_metrics(local_items: list, api_items: list, k: int = 5) ->
 
 def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = None):
     print("==================================================")
-    print(f"RUNNING AUTOCOMPLETE RANKING EVALUATION: {name or str(strategy.__class__)}")
+    print(f"DETAILED EVALUATION: {name or str(strategy.__class__)}")
     print("==================================================")
 
     for case in TEST_SUITES:
         print(f"\n[Test Case]: {case.name} (Query: '{case.text}')")
         print("-" * 50)
 
-        # 1. Fetch Local Results
         local_raw = taxon_autocomplete(
             text=case.text,
             taxon_id=case.taxon_id,
@@ -229,18 +220,15 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
                 "id": t.id,
                 "name": t.name,
                 "matched_term": getattr(t, "matched_term", ""),
-                "observations_count": getattr(t, "observations_count", 0), # if exposed on Taxon
+                "observations_count": getattr(t, "observations_count", 0),
             }
             for t in local_raw
         ]
 
-        # 2. Fetch API Results
         api_results = get_api_results(case)
 
-        # 3. Compute Metrics
         metrics_5 = calculate_overlap_metrics(local_results, api_results, k=5)
         metrics_10 = calculate_overlap_metrics(local_results, api_results, k=10)
-        # Compute position-aware metrics (focusing on top 5 where autocomplete matters most)
         rbo_score = calculate_rbo(local_results, api_results, p=0.85)
         pos_score = calculate_position_weighted_score(local_results, api_results, max_k=5)
 
@@ -263,17 +251,27 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
 
             print(f"   {i+1:2d}    | {loc_str:<42} | {api_str}")
 
-def run_evaluation_suite():
-    #for (name, strategy) in STRATEGIES_TO_TEST.items():
-    #   run_evaluation(strategy=strategy, name=name)
+# Active candidate strategies (incorporating top winners + next-gen variations)
+STRATEGIES_TO_TEST = {
+    "Baseline (Default)": TaxonScoringStrategy(),
+    "Strong Scientific Prefix Boost (-75)": TaxonScoringStrategy(scientific_prefix_boost=-75.0),
+    "Stronger Scientific Prefix Boost (-80)": TaxonScoringStrategy(scientific_prefix_boost=-80.0),
+    "Strongest Scientific Prefix Boost (-90)": TaxonScoringStrategy(scientific_prefix_boost=-90.0),
+}
 
-    summary_results = []
+def run_evaluation_suite():
+    strategy_scores = {name: {"rbo_sum": 0.0, "pos_sum": 0.0, "case_metrics": {}, "count": 0} for name in STRATEGIES_TO_TEST}
+    
+    print("Fetching reference results from iNaturalist API...")
+    case_api_results = {}
     for case in TEST_SUITES:
-        # Fetch API reference results once per test case
-        api_results = get_api_results(case)
+        case_api_results[case.name] = get_api_results(case)
+
+    print("Running evaluation suite across all strategies...")
+    for case in TEST_SUITES:
+        api_results = case_api_results[case.name]
 
         for strat_name, strategy in STRATEGIES_TO_TEST.items():
-            # Run local search with this specific strategy
             local_raw = taxon_autocomplete(
                 text=case.text,
                 taxon_id=case.taxon_id,
@@ -291,47 +289,94 @@ def run_evaluation_suite():
                 for t in local_raw
             ]
 
-            # Calculate metrics
             rbo_score = calculate_rbo(local_results, api_results, p=0.85)
             pos_score = calculate_position_weighted_score(local_results, api_results, max_k=5)
 
-            summary_results.append({
-                "test_name": case.name,
-                "strategy": strat_name,
+            strategy_scores[strat_name]["rbo_sum"] += rbo_score
+            strategy_scores[strat_name]["pos_sum"] += pos_score
+            strategy_scores[strat_name]["case_metrics"][case.name] = {
                 "rbo": rbo_score,
-                "top_5_pos_score": pos_score * 100,
-                "top_result": local_results[0]["name"] if local_results else "None",
-                "api_top_result": api_results[0]["name"] if api_results else "None"
-            })
+                "pos": pos_score * 100
+            }
+            strategy_scores[strat_name]["count"] += 1
 
-    # Render a clean comparative summary table
-    print("\n" + "=" * 123)
-    print("EVALUATION SUMMARY TABLE")
-    print("=" * 123)
-    print(f"| {'Test Case':<32} | {'Strategy':<22} | {'RBO Score':<10} | {'Top-5 Pos %':<11} | {'Local #1':<32} |")
-    print("|" + "-" * 34 + "|" + "-" * 24 + "|" + "-" * 12 + "|" + "-" * 13 + "|" + "-" * 34 + "|")
+    strategy_averages = {}
+    for strat_name, data in strategy_scores.items():
+        avg_rbo = data["rbo_sum"] / data["count"] if data["count"] > 0 else 0.0
+        avg_pos = data["pos_sum"] / data["count"] if data["count"] > 0 else 0.0
+        strategy_averages[strat_name] = {"avg_rbo": avg_rbo, "avg_pos": avg_pos}
 
-    for res in summary_results:
+    baseline_rbo = strategy_averages["Baseline (Default)"]["avg_rbo"]
+    baseline_pos = strategy_averages["Baseline (Default)"]["avg_pos"]
+
+    print("\n" + "=" * 85)
+    print("EVALUATION SUMMARY TABLE (AVERAGES)")
+    print("=" * 85)
+    print(f"| {'Strategy':<44} | {'Avg RBO Score':<15} | {'Avg Top-5 Pos %':<17} | {'Status':<16} |")
+    print("|" + "-" * 46 + "|" + "-" * 17 + "|" + "-" * 19 + "|" + "-" * 18 + "|")
+
+    for strat_name, avgs in strategy_averages.items():
+        if strat_name == "Baseline (Default)":
+            status = "Baseline"
+        elif avgs["avg_rbo"] > baseline_rbo and avgs["avg_pos"] > baseline_pos:
+            status = "Improved"
+        else:
+            status = "No Improvement"
+
         print(
-            f"| {res['test_name']:<32} | "
-            f"{res['strategy']:<22} | "
-            f"{res['rbo']:<10.3f} | "
-            f"{res['top_5_pos_score']:<10.1f}% | "
-            f"{res['top_result']:<32} |"
+            f"| {strat_name:<44} | "
+            f"{avgs['avg_rbo']:<15.4f} | "
+            f"{avgs['avg_pos']:<16.2f}% | "
+            f"{status:<16} |"
         )
-    print("=" * 123)
+    print("=" * 85)
 
-@dataclass
-class CandidateStrategy(TaxonScoringStrategy):
-    length_penalty_factor: float = 0.0
-    general_prefix_boost: 80.0
-    english_lang_boost: 110.0
+    print("\n" + "=" * 50)
+    print("STRATEGY DETAILED EVALUATION RESULTS")
+    print("=" * 50)
+
+    for strat_name, strategy in STRATEGIES_TO_TEST.items():
+        if strat_name == "Baseline (Default)":
+            continue
+        
+        avgs = strategy_averages[strat_name]
+        if avgs["avg_rbo"] >= baseline_rbo or avgs["avg_pos"] >= baseline_pos:
+            print(f"\n-> Strategy '{strat_name}' showed positive/equal movement. Displaying details:")
+            run_evaluation(strategy=strategy, name=strat_name)
+        else:
+            print(f"\n-> Strategy '{strat_name}' failed to make an improvement (Avg RBO: {avgs['avg_rbo']:.4f} vs Baseline: {baseline_rbo:.4f}).")
+
+    # --- TOP STRATEGIES SUMMARY ---
+    print("\n" + "=" * 115)
+    print("TOP STRATEGIES VS. CURRENT BASELINE SUMMARY")
+    print("=" * 115)
     
+    sorted_candidates = sorted(
+        [s for s in STRATEGIES_TO_TEST.keys() if s != "Baseline (Default)"],
+        key=lambda s: (strategy_averages[s]["avg_rbo"] + strategy_averages[s]["avg_pos"]/100),
+        reverse=True
+    )
 
-STRATEGIES_TO_TEST = {
-    "Baseline (Default)": TaxonScoringStrategy(),
-    "Candidate": CandidateStrategy(),
-}
+    print(f"| {'Strategy':<44} | {'Avg RBO (vs Base)':<20} | {'Avg Top-5 Pos % (vs Base)':<25} | {'Category Result':<18} |")
+    print("|" + "-" * 46 + "|" + "-" * 22 + "|" + "-" * 27 + "|" + "-" * 20 + "|")
+
+    for strat_name in sorted_candidates:
+        avgs = strategy_averages[strat_name]
+        rbo_diff = avgs["avg_rbo"] - baseline_rbo
+        pos_diff = avgs["avg_pos"] - baseline_pos
+        
+        rbo_str = f"{avgs['avg_rbo']:.4f} ({'+' if rbo_diff >= 0 else ''}{rbo_diff:.4f})"
+        pos_str = f"{avgs['avg_pos']:.2f}% ({'+' if pos_diff >= 0 else ''}{pos_diff:.2f}%)"
+        
+        status = "Improved" if (avgs["avg_rbo"] >= baseline_rbo and avgs["avg_pos"] >= baseline_pos) else ("Mixed" if (avgs["avg_rbo"] > baseline_rbo or avgs["avg_pos"] > baseline_pos) else "No Improvement")
+
+        print(
+            f"| {strat_name:<44} | "
+            f"{rbo_str:<20} | "
+            f"{pos_str:<25} | "
+            f"{status:<18} |"
+        )
+    print("=" * 115)
 
 if __name__ == "__main__":
     run_evaluation_suite()
