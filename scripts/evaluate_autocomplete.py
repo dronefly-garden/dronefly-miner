@@ -130,6 +130,11 @@ TEST_SUITES = [
         text="trump",
         taxon_id=None,
     ),
+    EvalCase(
+        name="Global + 'san'",
+        text="san",
+        taxon_id=None,
+    ),
 ]
 
 def get_api_results(case: EvalCase) -> list[dict]:
