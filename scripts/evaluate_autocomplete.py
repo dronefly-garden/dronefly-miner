@@ -6,9 +6,18 @@
 # ///
 import sys
 from dataclasses import dataclass
+import time
 from dronefly.core import Context, iNatClient
 from dronefly.miner import taxon_autocomplete
-from pyinaturalist_convert.fts import TaxonScoringStrategy
+
+# Gracefully handle older versions of pyinaturalist-convert lacking TaxonScoringStrategy
+try:
+    from pyinaturalist_convert.fts import TaxonScoringStrategy
+except ImportError:
+    @dataclass
+    class TaxonScoringStrategy:
+        """Fallback dummy class for older commits where scoring strategy didn't exist."""
+        pass
 
 @dataclass
 class EvalCase:
@@ -207,14 +216,31 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
         print(f"\n[Test Case]: {case.name} (Query: '{case.text}')")
         print("-" * 50)
 
-        local_raw = taxon_autocomplete(
-            text=case.text,
-            taxon_id=case.taxon_id,
-            language=case.language,
-            rank=case.rank,
-            strategy=strategy
-        )[:case.limit]
+        start_time = time.perf_counter()
         
+        # Safely pass strategy if supported, otherwise omit it for older versions
+        kwargs = {
+            "text": case.text,
+            "taxon_id": case.taxon_id,
+            "language": case.language,
+            "rank": case.rank,
+        }
+        try:
+            local_raw = taxon_autocomplete(**kwargs, strategy=strategy)[:case.limit]
+        except TypeError:
+            local_raw = taxon_autocomplete(**kwargs)[:case.limit]
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        # Danger zone flag
+        status_tag = ""
+        if elapsed_ms > 150:
+            status_tag = " ⚠️ [DANGER ZONE > 150ms]"
+        elif elapsed_ms > 50:
+            status_tag = " ⚡ [Yellow Zone > 50ms]"
+
+        print(f"Query '{case.text}' took {elapsed_ms:.2f} ms{status_tag}")
+
         local_results = [
             {
                 "id": t.id,
@@ -253,10 +279,8 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
 
 # Active candidate strategies (incorporating top winners + next-gen variations)
 STRATEGIES_TO_TEST = {
-    "Baseline (Default)": TaxonScoringStrategy(),
-    "Strong Scientific Prefix Boost (-75)": TaxonScoringStrategy(scientific_prefix_boost=-75.0),
-    "Stronger Scientific Prefix Boost (-80)": TaxonScoringStrategy(scientific_prefix_boost=-80.0),
-    "Strongest Scientific Prefix Boost (-90)": TaxonScoringStrategy(scientific_prefix_boost=-90.0),
+    "Baseline (Default)": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+    "No Change": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
 }
 
 def run_evaluation_suite():
@@ -272,13 +296,16 @@ def run_evaluation_suite():
         api_results = case_api_results[case.name]
 
         for strat_name, strategy in STRATEGIES_TO_TEST.items():
-            local_raw = taxon_autocomplete(
-                text=case.text,
-                taxon_id=case.taxon_id,
-                language=case.language,
-                rank=case.rank,
-                strategy=strategy
-            )[:case.limit]
+            kwargs = {
+                "text": case.text,
+                "taxon_id": case.taxon_id,
+                "language": case.language,
+                "rank": case.rank,
+            }
+            try:
+                local_raw = taxon_autocomplete(**kwargs, strategy=strategy)[:case.limit]
+            except TypeError:
+                local_raw = taxon_autocomplete(**kwargs)[:case.limit]
             
             local_results = [
                 {

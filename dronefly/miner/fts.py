@@ -1,4 +1,5 @@
 import csv
+from dataclasses import dataclass
 from inspect import signature
 import io
 import logging
@@ -14,7 +15,6 @@ from pyinaturalist_convert import (
     DWCA_TAXA_URL,
     DWCA_URL,
     TaxonAutocompleter,
-    TaxonScoringStrategy,
     download_file,
     enable_logging,
     get_db_taxa,
@@ -22,6 +22,15 @@ from pyinaturalist_convert import (
     load_fts_taxa,
     aggregate_taxon_db,
 )
+# Gracefully handle older versions of pyinaturalist-convert lacking TaxonScoringStrategy
+try:
+    from pyinaturalist_convert.fts import TaxonScoringStrategy
+except ImportError:
+    @dataclass
+    class TaxonScoringStrategy:
+        """Fallback dummy class for older commits where scoring strategy didn't exist."""
+        pass
+
 from pyinaturalist_convert.constants import PathOrStr
 from pyinaturalist_convert.download import MultiProgress, check_download, get_progress, _fname, count_lines
 
@@ -226,7 +235,7 @@ def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autoc
     # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
     # and submit PR upstream. If taxon_rank is approved and incorporated upstream, bump our dependency
     # to the new version, drop the signature check and warning, and unconditionally supply the parameter.
-    kwargs = {"language": language, "taxon_id": taxon_id, "strategy": strategy}
+    kwargs = {"language": language}
     if "taxon_rank" in signature(_autocompleter.search).parameters:
         kwargs["taxon_rank"] = rank
     else:
@@ -235,6 +244,16 @@ def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autoc
             # help text claims to support rank filtering, but the bot is not using
             # an autocompleter implementation that supports it.
             logger.warning("TaxonAutocompleter.search has no taxon_rank parameter; ignoring: %s", rank)
+    if "taxon_id" in signature(_autocompleter.search).parameters:
+        kwargs["taxon_id"] = taxon_id
+    else:
+        if taxon_id:
+            logger.warning("TaxonAutocompleter.search has no taxon_id parameter; ignoring: %s", rank)
+    if "strategy" in signature(_autocompleter.search).parameters:
+        kwargs["strategy"] = strategy
+    else:
+        # silently ignore
+        pass
     fts_taxa = _autocompleter.search(text, **kwargs)
 
     db_taxa = None
