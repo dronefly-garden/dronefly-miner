@@ -102,7 +102,7 @@ def load_dwca_observation_counts(
     zip_path = Path(zip_path).expanduser()
     db_path = Path(db_path).expanduser()
     
-    with sqlite3.connect(db_path) as conn:
+    with sqlite3.connect(db_path, check_same_thread=False) as conn:
         conn.execute("PRAGMA journal_mode = MEMORY;")
         conn.execute("PRAGMA synchronous = OFF;")
         conn.execute("PRAGMA temp_store = MEMORY;")
