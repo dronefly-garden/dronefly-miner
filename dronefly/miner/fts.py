@@ -220,7 +220,7 @@ def taxon_autocomplete(text: str, language=None, rank=None, taxon_id=None, autoc
         try:
             default_taxon_autocompleter
         except NameError:
-            default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=100)
+            default_taxon_autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=10)
         _autocompleter = default_taxon_autocompleter
 
     # TODO: Finish https://github.com/dronefly-garden/pyinaturalist-convert/tree/PR-fts-taxon-rank
