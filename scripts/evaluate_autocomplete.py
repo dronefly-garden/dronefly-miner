@@ -135,6 +135,31 @@ TEST_SUITES = [
         text="san",
         taxon_id=None,
     ),
+    EvalCase(
+        name="Global + 'rhodo arbores'",
+        text="rhodo arbores",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'macrosoma leuc'",
+        text="macrosoma leuc",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'tylos punct'",
+        text="tylos punct",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'o dentex'",
+        text="o dentex",
+        taxon_id=None,
+    ),
+    EvalCase(
+        name="Global + 'mer trans'",
+        text="mer trans",
+        taxon_id=None,
+    ),
 ]
 
 def get_api_results(case: EvalCase) -> list[dict]:
@@ -286,6 +311,8 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
 STRATEGIES_TO_TEST = {
     "Baseline (Default)": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
     "No Change": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+    "Strong Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-350) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+    "Weak Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-250) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
 }
 
 def run_evaluation_suite():
