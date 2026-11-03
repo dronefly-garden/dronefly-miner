@@ -256,9 +256,12 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
             "rank": case.rank,
         }
         try:
-            local_raw = taxon_autocomplete(**kwargs, strategy=strategy)[:case.limit]
+            local_raw = taxon_autocomplete(**kwargs, strategy=strategy)
         except TypeError:
-            local_raw = taxon_autocomplete(**kwargs)[:case.limit]
+            local_raw = taxon_autocomplete(**kwargs)
+        if not local_raw:
+            # skip this test as nothing was returned
+            continue
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000
 
@@ -278,7 +281,7 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
                 "matched_term": getattr(t, "matched_term", ""),
                 "observations_count": getattr(t, "observations_count", 0),
             }
-            for t in local_raw
+            for t in local_raw[:case.limit]
         ]
 
         api_results = get_api_results(case)
@@ -311,8 +314,8 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
 STRATEGIES_TO_TEST = {
     "Baseline (Default)": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
     "No Change": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
-    "Strong Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-350) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
-    "Weak Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-250) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+#    "Strong Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-350) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+#    "Weak Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-250) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
 }
 
 def run_evaluation_suite():
@@ -335,17 +338,19 @@ def run_evaluation_suite():
                 "rank": case.rank,
             }
             try:
-                local_raw = taxon_autocomplete(**kwargs, strategy=strategy)[:case.limit]
+                local_raw = taxon_autocomplete(**kwargs, strategy=strategy)
             except TypeError:
-                local_raw = taxon_autocomplete(**kwargs)[:case.limit]
-            
+                local_raw = taxon_autocomplete(**kwargs)
+            if not local_raw:
+                continue
+
             local_results = [
                 {
                     "id": t.id,
                     "name": t.name,
                     "matched_term": getattr(t, "matched_term", ""),
                 }
-                for t in local_raw
+                for t in local_raw[:case.limit]
             ]
 
             rbo_score = calculate_rbo(local_results, api_results, p=0.85)
