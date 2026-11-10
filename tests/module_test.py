@@ -1,4 +1,5 @@
 """Test dronefly-miner module."""
+
 import dronefly.miner
 
 

@@ -8,10 +8,10 @@ from datetime import datetime, timedelta
 from urllib.parse import parse_qs, urlparse, unquote
 import sqlite3
 
-from pyinaturalist_convert import TaxonAutocompleter
+from pyinaturalist_convert import TaxonAutocompleter, TaxonAdvancedSearchStrategy
 from dronefly.miner import taxon_autocomplete, DB_PATH
 
-autocompleter = TaxonAutocompleter(db_path=DB_PATH, limit=200)
+autocompleter = TaxonAutocompleter(db_path=DB_PATH, strategy=TaxonAdvancedSearchStrategy(), limit=200)
 
 # Regex to detect less interesting queries that may not reliably
 # match any desired taxon

@@ -10,14 +10,7 @@ import time
 from dronefly.core import Context, iNatClient
 from dronefly.miner import taxon_autocomplete
 
-# Gracefully handle older versions of pyinaturalist-convert lacking TaxonScoringStrategy
-try:
-    from pyinaturalist_convert.fts import TaxonScoringStrategy
-except ImportError:
-    @dataclass
-    class TaxonScoringStrategy:
-        """Fallback dummy class for older commits where scoring strategy didn't exist."""
-        pass
+from pyinaturalist_convert.fts import BaseSearchStrategy, TaxonAdvancedSearchStrategy, TaxonSimpleSearchStrategy
 
 @dataclass
 class EvalCase:
@@ -237,7 +230,7 @@ def calculate_overlap_metrics(local_items: list, api_items: list, k: int = 5) ->
         f"top_{k}_overlap_pct": overlap_ratio * 100
     }
 
-def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = None):
+def run_evaluation(strategy: BaseSearchStrategy | None = None, name: str = None):
     print("==================================================")
     print(f"DETAILED EVALUATION: {name or str(strategy.__class__)}")
     print("==================================================")
@@ -310,12 +303,11 @@ def run_evaluation(strategy: TaxonScoringStrategy | None = None, name: str = Non
 
             print(f"   {i+1:2d}    | {loc_str:<42} | {api_str}")
 
-# Active candidate strategies (incorporating top winners + next-gen variations)
 STRATEGIES_TO_TEST = {
-    "Baseline (Default)": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
-    "No Change": TaxonScoringStrategy() if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
-#    "Strong Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-350) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
-#    "Weak Sci Phrase Boost": TaxonScoringStrategy(sci_phrase_match_boost=-250) if hasattr(TaxonScoringStrategy, "__dataclass_fields__") else None,
+    "Baseline (Default)": TaxonSimpleSearchStrategy(),
+    "Advanced": TaxonAdvancedSearchStrategy(),
+    "Strong Sci Phrase Boost": TaxonAdvancedSearchStrategy(sci_phrase_match_boost=-350),
+    "Weak Sci Phrase Boost": TaxonAdvancedSearchStrategy(sci_phrase_match_boost=-250),
 }
 
 def run_evaluation_suite():
