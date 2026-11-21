@@ -237,7 +237,6 @@ def taxon_autocomplete(
     Autocompletion results are retrieved with a fast lookup against the
     local full-text indexed database.
     """
-    global default_taxon_autocompleter
 
     def hydrate_fts_taxa(fts_taxa):
         fts_taxon_ids = [t.id for t in fts_taxa]
@@ -250,52 +249,67 @@ def taxon_autocomplete(
             db_taxa.append(taxon)
         return db_taxa
 
-    _autocompleter = None
-    if autocompleter:
+    owned_autocompleter = autocompleter is None
+    if owned_autocompleter:
+        _autocompleter = TaxonAutocompleter(
+            db_path=DB_PATH,
+            limit=10,
+            strategy=strategy or TaxonAdvancedSearchStrategy(),
+        )
+    else:
         _autocompleter = autocompleter
-    else:
-        try:
-            default_taxon_autocompleter
-        except NameError:
-            default_taxon_autocompleter = TaxonAutocompleter(
-                db_path=DB_PATH, limit=10, strategy=TaxonAdvancedSearchStrategy()
-            )
-        _autocompleter = default_taxon_autocompleter
 
-    # TODO: If drop signature checks/warnings when accepted upstream
-    kwargs = {"language": language}
-    if "rank" in signature(_autocompleter.search).parameters:
-        kwargs["rank"] = rank
-    else:
-        if rank:
-            # Not much else we can do here but notify the bot operator, as the
-            # help text claims to support rank filtering, but the bot is not using
-            # an autocompleter implementation that supports it.
-            logger.warning(
-                "TaxonAutocompleter.search has no rank parameter; ignoring: %s", rank
-            )
-    if "taxon_id" in signature(_autocompleter.search).parameters:
-        kwargs["taxon_id"] = taxon_id
-    else:
-        if taxon_id:
-            logger.warning(
-                "TaxonAutocompleter.search has no taxon_id parameter; ignoring: %s",
-                taxon_id,
-            )
-    if "strict_language" in signature(_autocompleter.search).parameters:
-        kwargs["strict_language"] = strict_language
-    else:
-        if strict_language:
-            logger.warning(
-                "TaxonAutocompleter.search has no strict_language parameter; ignoring: %s",
-                strict_language,
-            )
-    if "strategy" in signature(_autocompleter.search).parameters:
-        kwargs["strategy"] = strategy
-    else:
-        # silently ignore
-        pass
-    fts_taxa = _autocompleter.search(text, **kwargs)
+    try:
+        # TODO: Drop signature checks/warnings when accepted upstream
+        kwargs = {}
+        if language is not None:
+            kwargs["language"] = language
+
+        if "rank" in signature(_autocompleter.search).parameters:
+            kwargs["rank"] = rank
+        else:
+            if rank:
+                # Not much else we can do here but notify the bot operator, as the
+                # help text claims to support rank filtering, but the bot is not using
+                # an autocompleter implementation that supports it.
+                logger.warning(
+                    "TaxonAutocompleter.search has no rank parameter; ignoring: %s",
+                    rank,
+                )
+
+        if "taxon_id" in signature(_autocompleter.search).parameters:
+            kwargs["taxon_id"] = taxon_id
+        else:
+            if taxon_id:
+                logger.warning(
+                    "TaxonAutocompleter.search has no taxon_id parameter; ignoring: %s",
+                    taxon_id,
+                )
+
+        if "strict_language" in signature(_autocompleter.search).parameters:
+            kwargs["strict_language"] = strict_language
+        else:
+            if strict_language:
+                logger.warning(
+                    "TaxonAutocompleter.search has no strict_language parameter; ignoring: %s",
+                    strict_language,
+                )
+
+        if "strategy" in signature(_autocompleter.search).parameters:
+            kwargs["strategy"] = strategy
+        else:
+            # silently ignore
+            pass
+
+        fts_taxa = _autocompleter.search(text, **kwargs)
+    finally:
+        if owned_autocompleter:
+            try:
+                _autocompleter.connection.close()
+            except sqlite3.Error as e:
+                logger.warning(
+                    "Error closing temporary TaxonAutocompleter connection: %s", e
+                )
 
     db_taxa = None
     if fts_taxa:
