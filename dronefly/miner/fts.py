@@ -1,5 +1,4 @@
 import csv
-from dataclasses import dataclass
 from inspect import signature
 import io
 import logging
@@ -281,7 +280,7 @@ def taxon_autocomplete(
         if taxon_id:
             logger.warning(
                 "TaxonAutocompleter.search has no taxon_id parameter; ignoring: %s",
-                rank,
+                taxon_id,
             )
     if "strict_language" in signature(_autocompleter.search).parameters:
         kwargs["strict_language"] = strict_language
@@ -289,7 +288,7 @@ def taxon_autocomplete(
         if strict_language:
             logger.warning(
                 "TaxonAutocompleter.search has no strict_language parameter; ignoring: %s",
-                rank,
+                strict_language,
             )
     if "strategy" in signature(_autocompleter.search).parameters:
         kwargs["strategy"] = strategy
