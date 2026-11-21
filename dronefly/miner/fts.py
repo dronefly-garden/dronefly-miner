@@ -238,9 +238,9 @@ def taxon_autocomplete(
     local full-text indexed database.
     """
 
-    def hydrate_fts_taxa(fts_taxa):
+    def hydrate_fts_taxa(fts_taxa, db_path):
         fts_taxon_ids = [t.id for t in fts_taxa]
-        _db_taxa = [t for t in get_db_taxa(db_path=DB_PATH, ids=fts_taxon_ids)]
+        _db_taxa = [t for t in get_db_taxa(db_path=db_path, ids=fts_taxon_ids)]
         db_taxa = []
         for i, ft_id in enumerate(fts_taxon_ids):
             taxon = next(t for t in _db_taxa if t.id == ft_id)
@@ -258,6 +258,8 @@ def taxon_autocomplete(
         )
     else:
         _autocompleter = autocompleter
+
+    active_db_path = _resolve_db_path(_autocompleter)
 
     try:
         # TODO: Drop signature checks/warnings when accepted upstream
@@ -313,7 +315,7 @@ def taxon_autocomplete(
 
     db_taxa = None
     if fts_taxa:
-        db_taxa = hydrate_fts_taxa(fts_taxa)
+        db_taxa = hydrate_fts_taxa(fts_taxa, active_db_path)
     return db_taxa
 
 
@@ -328,3 +330,19 @@ def ta(text: str, language="en"):
         pprint(db_taxa[0])
     else:
         print(f"Not found: {text}")
+
+
+def _resolve_db_path(autocompleter: TaxonAutocompleter) -> Path:
+    if getattr(autocompleter, "db_path", None):
+        return Path(autocompleter.db_path)
+
+    conn = getattr(autocompleter, "connection", None)
+    if conn is not None:
+        try:
+            for row in conn.execute("PRAGMA database_list"):
+                if row["name"] == "main" and row["file"]:
+                    return Path(row["file"])
+        except sqlite3.Error:
+            pass
+
+    return Path(DB_PATH)
