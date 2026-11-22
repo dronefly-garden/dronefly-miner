@@ -1,9 +1,12 @@
 {
-    "python-envs.pythonProjects": [
-        {
-            "path": ".",
-            "envManager": "ms-python.python:venv",
-            "packageManager": "ms-python.python:pip"
-        }
+    "python.defaultInterpreterPath": "${workspaceFolder}/../dronefly-monorepo/.venv/bin/python",
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.extraPaths": [
+        "../dronefly",
+        "../dronefly-cli",
+        "../dronefly-core",
+        "../dronefly-discord",
+        "../dronefly-doc",
+        "../dronefly-miner"
     ]
 }
