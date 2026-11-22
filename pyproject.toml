@@ -19,7 +19,7 @@ dependencies = [
     "parquet>=1.3.1",
     "polars>=1.44.2",
     "pyarrow>=25.0.1",
-    "pyinaturalist-convert @ git+https://github.com/pyinat/pyinaturalist-convert.git@main",
+    "pyinaturalist-convert @ git+https://github.com/pyinat/pyinaturalist-convert.git@b4c55439686f3cd0aabbe91034cc2497cd3f060a",
     "sqlalchemy>=2.0.52",
     "xmltodict>=1.0.4",
 ]
